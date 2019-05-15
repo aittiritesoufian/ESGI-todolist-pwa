@@ -1,6 +1,6 @@
 import AppTodo from '/js/components/todo/todo.js';
 import { openDB } from '/node_modules/idb/build/esm/index.js';
-// import checkConnectivity from '/js/connection.js';
+import checkConnectivity from '/js/connection.js';
 
 (async function(document) {
   const app = document.querySelector('#app');
@@ -11,19 +11,9 @@ import { openDB } from '/node_modules/idb/build/esm/index.js';
 
   // delete card on delete task;
   document.addEventListener('todo-deleted', ({ detail }) => {
+    console.log(detail);
     const card = document.getElementById(detail);
     card.remove();
-  });
-
-  window.addEventListener('online', e => {
-    // todo
-    console.log('online');
-  });
-  window.addEventListener('offline', e => {
-    setTimeout(() => {
-      // todo
-      console.log('offline');
-    }, 3000);
   });
 
   try {
@@ -37,10 +27,22 @@ import { openDB } from '/node_modules/idb/build/esm/index.js';
     });
   
     if (navigator.onLine) {
-      await database.put('todos', json, 'todos');
+      for (var i = json.length - 1; i >= 0; i--) {
+        // json[i]["id"];
+        // json[i]["description"];
+        // json[i]["solved"];
+        console.log(json[i]);
+        await database.put('todos', {"id":json[i]["id"],"description":json[i]["description"], "solved":json[i]["solved"], "status":0}, json[i]["id"]);
+      }
+      // await database.put('todos', json, 'todo');
     }
 
-    const todos = await database.get('todos', 'todos');
+    const keys = await database.getAllKeys('todos');
+    let todos = [];
+    for (var i = keys.length - 1; i >= 0; i--) {
+      todos[keys[i]] = await database.get('todos',keys[i]);
+    }
+    // console.log(todos);
   
     const cards = todos.map(item => {
       const cardElement = new AppTodo();
@@ -48,11 +50,13 @@ import { openDB } from '/node_modules/idb/build/esm/index.js';
       cardElement.initCard(
         item.id,
         item.description,
-        item.solved);
+        item.solved,
+        item.status);
       listPage.appendChild(cardElement);
 
       return cardElement;
     });
+    console.log(cards);
 
     //create todo
     const createForm = document.querySelector('#add-todo');
@@ -74,15 +78,16 @@ import { openDB } from '/node_modules/idb/build/esm/index.js';
         // ajout dans InnoDB à partir de la création sur json-server
         newTodo = await response.json();
         console.log(newTodo);
-        todos.push(newTodo);
-        database.put('todos', todos, 'todos');
+        // todos.push(newTodo);
+        database.put('todos', {"id":newTodo.id, "description":newTodo.description, "solved":newTodo.solved, "status":0}, newTodo.id);
 
         //ajout de la card en front
         const cardElement = new AppTodo();
         cardElement.initCard(
           newTodo.id,
           newTodo.description,
-          newTodo.solved);
+          newTodo.solved,
+          newTodo.status);
         listPage.appendChild(cardElement);
         e.target.value = "";
         // console.log(result);

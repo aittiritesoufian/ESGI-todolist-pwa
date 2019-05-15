@@ -1,19 +1,19 @@
 {
   "todos": [
     {
-      "description": "ceci est une nouvelle tâche, mise à jour",
+      "description": "ceci est une nouvelle tâche ",
       "solved": 0,
       "id": 31
     },
     {
-      "description": "Ceci est encore une nouvelle tâche\n",
+      "description": "ceci est une tâche modifiée,",
       "solved": 0,
       "id": 32
     },
     {
-      "description": "ceci est une nouvelle tâche\n",
+      "description": "ceci est une tâche",
       "solved": 0,
-      "id": 33
+      "id": 34
     }
   ]
 }

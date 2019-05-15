@@ -1,4 +1,6 @@
 import { LitElement, html, css } from 'lit-element';
+import { openDB } from '/node_modules/idb/build/esm/index.js';
+import sync from '/js/sync.js';
 
 export default class AppTodo extends LitElement {
   constructor() {
@@ -11,6 +13,7 @@ export default class AppTodo extends LitElement {
       id: { type: Number },
       solved: { type: Number },
       description: { type: String },
+      status: { type: Number }// 1 = need to update remote, 0 = sync, -1 = drop-it
     }
   }
 
@@ -112,71 +115,56 @@ export default class AppTodo extends LitElement {
     `;
   }
 
-  doUpdate(e){
+  async doUpdate(e){
     console.log(e.target.value);
     this.description = e.target.value;
     console.log(this.description);
     console.log("changed");
-    
-    //prepare query
-    const myHeaders = new Headers({
-      "Content-Type": "application/json",
-    });
 
-    const params = { method: 'PATCH',
-               headers: myHeaders,
-               mode: 'cors',
-               cache: 'default',
-               body: JSON.stringify({"id":this.id,"description":this.description,"solved":this.solved})};
+    try{
+      const database = await openDB('app-store', 1, {
+        upgrade(db) {
+          db.createObjectStore('todos');
+        }
+      });
 
-    //call to API to update
-    const result = fetch('http://localhost:3000/todos/'+this.id, params).then( (response) => {
-      if(response.ok) {
-        console.log("ok");
-      } else {
-        console.log("Server refused the update");
-        console.log(response);
-        resolve(false);
-      }
-    }).catch(function(error) {
-      console.log('General error on update : ' + error.message);
-    });
+      await database.put('todos', {"id":this.id,"description":this.description, "solved":this.solved, "status":1}, this.id);
+
+      //relancer la synchronisation
+      sync();
+
+    } catch(error) {
+      console.log("error : "+error.message);
+    }
   }
 
-  doDelete(){
+  async doDelete(){
     console.log("delete "+this.id);
     var id = this.id;
 
-    const myHeaders = new Headers({
-      "Content-Type": "application/json",
-    });
+    this.status = -1;
+    try{
+      const database = await openDB('app-store', 1, {
+        upgrade(db) {
+          db.createObjectStore('todos');
+        }
+      });
 
-    const params = { method: 'DELETE',
-               headers: myHeaders,
-               mode: 'cors',
-               cache: 'default'};
+      await database.put('todos', {"id":this.id,"status":this.status}, this.id);
 
-    const result = fetch('http://localhost:3000/todos/'+this.id, params).then( (response) => {
-      if(response.ok) {
-        console.log("ok");
-        const event = new CustomEvent('todo-deleted', {
-          detail: id
-        });
-        document.dispatchEvent(event);
-      } else {
-        console.log("Server refused the deletion");
-        console.log(response);
-        resolve(false);
-      }
-    }).catch(function(error) {
-      console.log('General error on delete: ' + error.message);
-    });
+      //relancer la synchronisation
+      sync();
+
+    } catch(error) {
+      console.log("error : "+error.message);
+    }
   }
 
-  initCard(id, description, solved) {
+  initCard(id, description, solved, status) {
     this.id = id;
     this.description = description;
     this.solved = solved;
+    this.status = status;
   }
 
   render() {

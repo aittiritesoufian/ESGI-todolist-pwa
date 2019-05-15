@@ -1,7 +1,17 @@
 module.exports = {
-  "globDirectory": "js/",
+  "globDirectory": "images/",
   "globPatterns": [
-    "**/*.js"
+    "**/*.png"
   ],
-  "swDest": "js\\sw.js"
+  "swDest": "service-worker.js",
+   "runtimeCaching": [{
+       "urlPattern": "/.(?:jpg|jpeg)$/",
+       "handler": "CacheFirst",
+   }],
+   "importWorkboxFrom": "local",
+   "globIgnores": [
+       'node_modules/**/*',
+       'workbox-config.js',
+       'workbox-v4.2.0'
+   ]
 };
